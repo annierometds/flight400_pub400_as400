@@ -1,0 +1,1599 @@
+/* FLBUILD - builds Flight400 in one PUB400 library                  */
+/* CALL FLBUILD PARM('MYLIB' 'COMPILE')  then  PARM('MYLIB' 'DATA')    */
+/* Results are written to table MYLIB/FLBLOG                           */
+             PGM        PARM(&LIB &MODE)
+             DCL        VAR(&LIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MODE) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&STEP) TYPE(*CHAR) LEN(60)
+             DCL        VAR(&FAIL) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&NOK) TYPE(*DEC) LEN(5 0)
+             DCL        VAR(&NBAD) TYPE(*DEC) LEN(5 0)
+             DCL        VAR(&NOKC) TYPE(*CHAR) LEN(5)
+             DCL        VAR(&NBADC) TYPE(*CHAR) LEN(5)
+             DCL        VAR(&SQL) TYPE(*CHAR) LEN(300)
+
+             ADDLIBLE   LIB(&LIB) POSITION(*FIRST)
+             MONMSG     MSGID(CPF2103)
+             CHGVAR     VAR(&SQL) VALUE('CREATE TABLE ' *TCAT &LIB +
+                          *TCAT '/FLBLOG (LINE VARCHAR(100))')
+             RUNSQL     SQL(&SQL) COMMIT(*NONE) NAMING(*SYS)
+             MONMSG     MSGID(SQL0000 CPF0000)
+             CHGVAR     VAR(&SQL) VALUE('DELETE FROM ' *TCAT &LIB +
+                          *TCAT '/FLBLOG')
+             RUNSQL     SQL(&SQL) COMMIT(*NONE) NAMING(*SYS)
+             MONMSG     MSGID(SQL0000 CPF0000)
+
+             IF         COND(&MODE *EQ 'DATA') THEN(GOTO CMDLBL(DATA))
+             CHGVAR     VAR(&STEP) VALUE('CRTMSGF FRSMSGF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             DLTMSGF    MSGF(&LIB/FRSMSGF)
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&STEP) VALUE('CRTMSGF FRSMSGF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMSGF    MSGF(&LIB/FRSMSGF) TEXT('Flight400 messages')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0021')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0021) MSGF(&LIB/FRSMSGF) +
+                          MSG('The FLIGHT NUMBER entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0022')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0022) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for the DAY OF THE WEEK is mis+
+                          sing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0023')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0023) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for the DAY OF THE WEEK is inv+
+                          alid')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0024')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0024) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for DEPARTURE/ARRIVAL TIME is m+
+                          issing or invalid')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0025')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0025) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for MILEAGE is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0028')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0028) MSGF(&LIB/FRSMSGF) +
+                          MSG('Please use a ''1'' to make your selectio+
+                          n')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0040')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0040) MSGF(&LIB/FRSMSGF) +
+                          MSG('DATE and/or CITY info not valid for sele+
+                          cted FLIGHT - Select new FLIGHT(F6)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0041')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0041) MSGF(&LIB/FRSMSGF) +
+                          MSG('The AIRLINE entry is either missing or i+
+                          nvalid')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0042')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0042) MSGF(&LIB/FRSMSGF) +
+                          MSG('The AIRLINE entry was not found on the A+
+                          irline table')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0048')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0048) MSGF(&LIB/FRSMSGF) +
+                          MSG('The AGENT NUMBER is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0050')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0050) MSGF(&LIB/FRSMSGF) +
+                          MSG('You must type in a valid AGENT NAME to c+
+                          ontinue')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0052')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0052) MSGF(&LIB/FRSMSGF) +
+                          MSG('The AGENT NAME entered is not on file')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0053')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0053) MSGF(&LIB/FRSMSGF) +
+                          MSG('The AGENT NAME entered is already on fil+
+                          e')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0054')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0054) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for PASSWORD is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0055')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0055) MSGF(&LIB/FRSMSGF) +
+                          MSG('You must type in a valid PASSWORD to con+
+                          tinue')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0057')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0057) MSGF(&LIB/FRSMSGF) +
+                          MSG('The PASSWORD entered is incorrect')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0058')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0058) MSGF(&LIB/FRSMSGF) +
+                          MSG('The DATE OF FLIGHT entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0059')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0059) MSGF(&LIB/FRSMSGF) +
+                          MSG('The DATE of FLIGHT entry is not a valid d+
+                          ate')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0060')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0060) MSGF(&LIB/FRSMSGF) +
+                          MSG('The DATE OF FLIGHT entry must be after t+
+                          odays date')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0061')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0061) MSGF(&LIB/FRSMSGF) +
+                          MSG('The FROM CITY entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0062')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0062) MSGF(&LIB/FRSMSGF) +
+                          MSG('The FROM CITY entered is not a valid fli+
+                          ght location')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0064')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0064) MSGF(&LIB/FRSMSGF) +
+                          MSG('The CUSTOMER NUMBER entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0065')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0065) MSGF(&LIB/FRSMSGF) +
+                          MSG('The CUSTOMER NAME entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0066')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0066) MSGF(&LIB/FRSMSGF) +
+                          MSG('Please use the format: Lastname, Firstna+
+                          me (with comma) for CUSTOMER NAME')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0067')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0067) MSGF(&LIB/FRSMSGF) +
+                          MSG('The CUSTOMER NAME entry is already on fi+
+                          le')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0071')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0071) MSGF(&LIB/FRSMSGF) +
+                          MSG('The TO CITY entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0072')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0072) MSGF(&LIB/FRSMSGF) +
+                          MSG('The TO CITY entered is not a valid fligh+
+                          t location')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0075')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0075) MSGF(&LIB/FRSMSGF) +
+                          MSG('The FROM CITY and the TO CITY are the sa+
+                          me')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0076')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0076) MSGF(&LIB/FRSMSGF) +
+                          MSG('The CITY NAME entry is either missing or i+
+                          nvalid')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0077')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0077) MSGF(&LIB/FRSMSGF) +
+                          MSG('The CITY INITIALS entered are already be+
+                          ing used')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0078')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0078) MSGF(&LIB/FRSMSGF) +
+                          MSG('The city record could not be added')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0079')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0079) MSGF(&LIB/FRSMSGF) +
+                          MSG('The city record could not be updated')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0081')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0081) MSGF(&LIB/FRSMSGF) +
+                          MSG('The TICKET CLASS entry is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0082')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0082) MSGF(&LIB/FRSMSGF) +
+                          MSG('The TICKET CLASS may only be entered onc+
+                          e')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0083')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0083) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for SEATS AVAILABLE is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0084')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0084) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for TICKET PRICE is missing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0085')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0085) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for the number of TICKETS is m+
+                          issing')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0086')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0086) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for the number of TICKETS is l+
+                          imited to 10')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0090')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0090) MSGF(&LIB/FRSMSGF) +
+                          MSG('The entry for ORDER NUMBER was either mi+
+                          ssing or invalid')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0091')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0091) MSGF(&LIB/FRSMSGF) +
+                          MSG('The ORDER NUMBER entry was not found in t+
+                          he ORDERS file')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRS0095')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(FRS0095) MSGF(&LIB/FRSMSGF) +
+                          MSG('You must key a PHONE NUMBER to FAX this o+
+                          rder')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHKOBJ     OBJ(&LIB/FNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF FNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/FNAME) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FNAME) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/LNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF LNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/LNAME) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(LNAME) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FRCITY) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF FRCITY')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/FRCITY) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FRCITY) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/TOCITY) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF TOCITY')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/TOCITY) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(TOCITY) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/AIRLINE) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF AIRLINE')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/AIRLINE) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(AIRLINE) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/AGENTS) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF AGENTS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/AGENTS) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(AGENTS) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/CUSTOMERS) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF CUSTOMERS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/CUSTOMERS) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(CUSTOMERS) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FLIGHTS) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF FLIGHTS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/FLIGHTS) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FLIGHTS) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/ORDERS) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF ORDERS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/ORDERS) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(ORDERS) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FNEXTO) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTPF FNEXTO')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTPF      FILE(&LIB/FNEXTO) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FNEXTO) SIZE(*NOMAX)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/AGENTSL) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF AGENTSL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/AGENTSL) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(AGENTSL)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/AGENTSZ) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF AGENTSZ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/AGENTSZ) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(AGENTSZ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/AIRLINEL) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF AIRLINEL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/AIRLINEL) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(AIRLINEL)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/CUSTNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF CUSTNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/CUSTNAME) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(CUSTNAME)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/CUSTOMER) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF CUSTOMER')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/CUSTOMER) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(CUSTOMER)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/CUSTOMRZ) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF CUSTOMRZ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/CUSTOMRZ) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(CUSTOMRZ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FLIGHTSL) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF FLIGHTSL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/FLIGHTSL) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FLIGHTSL)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FLIGHTSZ) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF FLIGHTSZ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/FLIGHTSZ) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FLIGHTSZ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/FRCITYL) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF FRCITYL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/FRCITYL) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(FRCITYL)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/TOCITYL) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF TOCITYL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/TOCITYL) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(TOCITYL)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/ORDERSZ) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF ORDERSZ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/ORDERSZ) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(ORDERSZ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/CUSTORD) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF CUSTORD')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/CUSTORD) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(CUSTORD)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/ORDDATE) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF ORDDATE')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/ORDDATE) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(ORDDATE)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHKOBJ     OBJ(&LIB/ORDNAME) OBJTYPE(*FILE)
+             MONMSG     MSGID(CPF9801) EXEC(DO)
+             CHGVAR     VAR(&STEP) VALUE('CRTLF ORDNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTLF      FILE(&LIB/ORDNAME) SRCFILE(&LIB/QDDSSRCF) +
+                          SRCMBR(ORDNAME)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             ENDDO
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS000DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS000DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS000DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS001DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS001DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS001DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS002DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS002DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS002DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS003DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS003DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS003DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS004DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS004DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS004DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS005DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS005DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS005DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS009DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS009DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS009DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS021DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS021DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS021DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS022DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS022DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS022DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS023DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS023DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS023DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS024DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS024DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS024DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS025DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS025DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS025DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS401DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS401DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS401DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS401DFB')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS401DFB) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS401DFB) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS402DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS402DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS402DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS402DFB')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS402DFB) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS402DFB) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS403DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS403DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS403DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS404DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS404DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS404DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS405DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS405DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS405DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS406DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS406DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS406DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS407DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS407DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS407DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS408DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS408DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS408DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS409DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS409DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS409DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS410DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS410DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS410DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS411DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS411DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS411DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS412DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS412DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS412DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRS413DF')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRS413DF) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(FRS413DF) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF MSGPANEL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/MSGPANEL) SRCFILE(&LIB/QDDSSRCD) +
+                          SRCMBR(MSGPANEL) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CRTDTAARA  DTAARA(&LIB/FLDS) TYPE(*CHAR) LEN(5) VALUE('CLEAR')
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM RTRAND')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/RTRAND) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(RTRAND) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM RTDOFW')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/RTDOFW) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(RTDOFW) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM GTOJCV')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/GTOJCV) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(GTOJCV) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM JTOGCV')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/JTOGCV) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(JTOGCV) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM BCUST')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/BCUST) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(BCUST) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM BFLGHT')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/BFLGHT) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(BFLGHT) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS401')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS401) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS401) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS402')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS402) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS402) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS403')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS403) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS403) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS404')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS404) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS404) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS405')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS405) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS405) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS406')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS406) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS406) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS407')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS407) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS407) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS408')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS408) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS408) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS409')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS409) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS409) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS410')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS410) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS410) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS411')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS411) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS411) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS412')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS412) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS412) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS413')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS413) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS413) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS000')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS000) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS000) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS002')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS002) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS002) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS003')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS003) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS003) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS004')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS004) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS004) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS005')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS005) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS005) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS021')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS021) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS021) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS023')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS023) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS023) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS024')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS024) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS024) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTRPGPGM FRS001 (mbr FRS001U)')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTRPGPGM  PGM(&LIB/FRS001) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS001U) CVTOPT(*DATETIME *VARCHAR) +
+                          ALWNULL(*YES) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTBNDRPG FRS009')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTBNDRPG  PGM(&LIB/FRS009) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS009) DFTACTGRP(*NO) ACTGRP(*CALLER) +
+                          DBGVIEW(*SOURCE) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTSQLRPGI FRS022')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTSQLRPGI OBJ(&LIB/FRS022) SRCFILE(&LIB/QRPGSRC) +
+                          SRCMBR(FRS022) OBJTYPE(*PGM) COMMIT(*NONE) +
+                          DBGVIEW(*SOURCE) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM RTSEED')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/RTSEED) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(RTSEED) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM BLDCST')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/BLDCST) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(BLDCST) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM FRS001CL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/FRS001CL) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(FRS001CL) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM FRS411CL')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/FRS411CL) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(FRS411CL) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM MSGPRG')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/MSGPRG) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(MSGPRG) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM MSGPGM2')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/MSGPGM2) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(MSGPGM2) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM MSGPRGH')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/MSGPRGH) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(MSGPRGH) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM TESTIT')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/TESTIT) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(TESTIT) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM USECLEAR')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/USECLEAR) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(USECLEAR) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCLPGM USERESET')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCLPGM   PGM(&LIB/USERESET) SRCFILE(&LIB/QCLPSRC) +
+                          SRCMBR(USERESET) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCMD USECLEAR')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCMD     CMD(&LIB/USECLEAR) PGM(&LIB/USECLEAR) +
+                          SRCFILE(&LIB/QCMDSRC) SRCMBR(USECLEAR) +
+                          REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTCMD USERESET')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTCMD     CMD(&LIB/USERESET) PGM(&LIB/USERESET) +
+                          SRCFILE(&LIB/QCMDSRC) SRCMBR(USERESET) +
+                          REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRSMAIN (menu)')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRSMAIN) SRCFILE(&LIB/QMNUSRC) +
+                          SRCMBR(FRSMAIN) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             DLTMSGF    MSGF(&LIB/FRSMAINQQ)
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&STEP) VALUE('CRTMSGF FRSMAINQQ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMSGF    MSGF(&LIB/FRSMAINQQ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0001')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0001) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''CREATE'')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0002')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0002) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''UPDATE'')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0003')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0003) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''DSPLAY'')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0004')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0004) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''DELETE'')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0005')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0005) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''FAX   '')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0010')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0010) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''MAINT '')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0020')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0020) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('CALL FRS000 PARM(''REPORT'')')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMAINQQ USR0090')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0090) MSGF(&LIB/FRSMAINQQ) +
+                          MSG('SIGNOFF ENDCNN(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTMNU FRSMAIN')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMNU     MENU(&LIB/FRSMAIN) TYPE(*DSPF) +
+                          DSPF(&LIB/FRSMAIN) MSGF(&LIB/FRSMAINQQ) +
+                          CURLIB(&LIB) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRSMANT (menu)')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRSMANT) SRCFILE(&LIB/QMNUSRC) +
+                          SRCMBR(FRSMANT) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             DLTMSGF    MSGF(&LIB/FRSMANTQQ)
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&STEP) VALUE('CRTMSGF FRSMANTQQ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMSGF    MSGF(&LIB/FRSMANTQQ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0001')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0001) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('CALL FRS024')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0002')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0002) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('CALL FRS021')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0003')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0003) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('CALL FRS022')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0004')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0004) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('UPDDTA AIRLINE')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0005')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0005) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('CALL FRS023')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSMANTQQ USR0090')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0090) MSGF(&LIB/FRSMANTQQ) +
+                          MSG('SIGNOFF ENDCNN(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTMNU FRSMANT')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMNU     MENU(&LIB/FRSMANT) TYPE(*DSPF) +
+                          DSPF(&LIB/FRSMANT) MSGF(&LIB/FRSMANTQQ) +
+                          CURLIB(&LIB) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTDSPF FRSREPT (menu)')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTDSPF    FILE(&LIB/FRSREPT) SRCFILE(&LIB/QMNUSRC) +
+                          SRCMBR(FRSREPT) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             DLTMSGF    MSGF(&LIB/FRSREPTQQ)
+             MONMSG     MSGID(CPF0000)
+             CHGVAR     VAR(&STEP) VALUE('CRTMSGF FRSREPTQQ')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMSGF    MSGF(&LIB/FRSREPTQQ)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSREPTQQ USR0001')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0001) MSGF(&LIB/FRSREPTQQ) +
+                          MSG('SBMJOB CMD(RUNQRY QRY(*NONE) QRYFILE((AG+
+                          ENTS)) OUTTYPE(*PRINTER))')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSREPTQQ USR0002')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0002) MSGF(&LIB/FRSREPTQQ) +
+                          MSG('RUNQRY QRY(*NONE) QRYFILE((AGENTS)) RCDS+
+                          LT(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSREPTQQ USR0003')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0003) MSGF(&LIB/FRSREPTQQ) +
+                          MSG('RUNQRY QRY(*NONE) QRYFILE((FLIGHTS)) OUT+
+                          TYPE(*PRINTER) RCDSLT(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSREPTQQ USR0004')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0004) MSGF(&LIB/FRSREPTQQ) +
+                          MSG('RUNQRY QRY(*NONE) QRYFILE((FLIGHTS)) RCD+
+                          SLT(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('ADDMSGD FRSREPTQQ USR0090')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             ADDMSGD    MSGID(USR0090) MSGF(&LIB/FRSREPTQQ) +
+                          MSG('SIGNOFF ENDCNN(*YES)')
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CRTMNU FRSREPT')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CRTMNU     MENU(&LIB/FRSREPT) TYPE(*DSPF) +
+                          DSPF(&LIB/FRSREPT) MSGF(&LIB/FRSREPTQQ) +
+                          CURLIB(&LIB) REPLACE(*YES)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             GOTO       CMDLBL(DONE)
+
+ DATA:
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM FNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/FNAME)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM LNAME')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/LNAME)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM FRCITY')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/FRCITY)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM TOCITY')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/TOCITY)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM AIRLINE')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/AIRLINE)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM AGENTS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/AGENTS)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM FNEXTO')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/FNEXTO)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM FLIGHTS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/FLIGHTS)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CLRPFM CUSTOMERS')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CLRPFM     FILE(&LIB/CUSTOMERS)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('RUNSQLSTM SEED')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             RUNSQLSTM  SRCFILE(&LIB/QSQLSRC) SRCMBR(SEED) +
+                          COMMIT(*NONE) NAMING(*SYS) +
+                          DFTRDBCOL(&LIB) ERRLVL(30)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CALL BFLGHT')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CALL       PGM(&LIB/BFLGHT)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+             CHGVAR     VAR(&STEP) VALUE('CALL BLDCST')
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CALL       PGM(&LIB/BLDCST)
+             MONMSG     MSGID(CPF0000 CPD0000 QRG0000 RNS0000 SQL0000 +
+                          MCH0000 CEE0000) +
+                          EXEC(CHGVAR VAR(&FAIL) VALUE('1'))
+             CALLSUBR   SUBR(LOG)
+
+ DONE:
+             CHGVAR     VAR(&NOKC) VALUE(&NOK)
+             CHGVAR     VAR(&NBADC) VALUE(&NBAD)
+             CHGVAR     VAR(&STEP) VALUE('SUMMARY ' *CAT &MODE *BCAT +
+                          'ok=' *CAT &NOKC *BCAT 'failed=' *CAT &NBADC)
+             CHGVAR     VAR(&FAIL) VALUE('0')
+             CALLSUBR   SUBR(LOG)
+             SNDPGMMSG  MSG(&STEP) MSGTYPE(*COMP)
+             RETURN
+
+             SUBR       SUBR(LOG)
+             IF         COND(&FAIL *EQ '1') THEN(DO)
+               CHGVAR     VAR(&NBAD) VALUE(&NBAD + 1)
+               CHGVAR     VAR(&STEP) VALUE('FAILED  ' *CAT &STEP)
+             ENDDO
+             ELSE       CMD(DO)
+               IF         COND(%SST(&STEP 1 7) *NE 'SUMMARY') +
+                            THEN(CHGVAR VAR(&NOK) VALUE(&NOK + 1))
+               CHGVAR     VAR(&STEP) VALUE('ok      ' *CAT &STEP)
+             ENDDO
+             CHGVAR     VAR(&SQL) VALUE('INSERT INTO ' *TCAT &LIB +
+                          *TCAT '/FLBLOG VALUES(''' *CAT %TRIM(&STEP) +
+                          *TCAT ''')')
+             RUNSQL     SQL(&SQL) COMMIT(*NONE) NAMING(*SYS)
+             MONMSG     MSGID(SQL0000 CPF0000)
+             ENDSUBR
+             ENDPGM
